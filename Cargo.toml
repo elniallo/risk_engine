@@ -1,0 +1,14 @@
+[package]
+name = "risk-engine"
+version = "0.1.0"
+authors = ["elniallo <niall@hycon.io>"]
+edition = "2018"
+
+[dependencies]
+gotham ="*"
+hyper = "*"
+mime = "*"
+gotham_derive="*"
+serde="*"
+serde_derive="*"
+serde_json="*"
