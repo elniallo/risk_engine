@@ -7,6 +7,15 @@ pub struct ActiveAccount {
     user_id: usize,
     last_active: SystemTime,
 }
+
+impl ActiveAccount {
+    fn new(id:usize) -> Self{
+        Self {
+        user_id: id,
+        last_active: SystemTime::now()
+        }
+    }
+}
 #[derive(Clone,Deserialize)]
 pub struct WithdrawTransaction {
     user_id: usize,
@@ -75,7 +84,9 @@ impl RiskEngine {
 
     pub fn process_withdrawal(&mut self, tx: WithdrawTransaction)->Result<WithdrawalStatus,String>{
         let mut account = self.get_account(tx.user_id)?;
+        let account_cln = account.clone();
         let valid = account.valid_order(tx.amount, tx.order_type);
+        self.recent_accounts.insert(account_cln.get_id(), account_cln);
         if valid {
             if let Some(pendings) = self.pending_book.get_mut(&tx.user_id) {
                 pendings.push(tx);
