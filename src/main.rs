@@ -50,8 +50,6 @@ impl Worker {
                     let mut settlement: risk_engine::CompletedTransaction = serde_json::from_str(&msg).unwrap();
                     println!("Settlement: {:?}", &settlement);
                     eng.process_settlement(&mut settlement);
-                    // let acc = eng.get_account(100).unwrap();
-                    // println!("Balance: {:?}", acc.get_balances());
                 }
                 
             }
@@ -171,8 +169,6 @@ fn main() {
         for ms in consumer.poll().unwrap().iter() {
             for m in ms.messages() {
             let msg = String::from_utf8(m.value.to_vec());
-            // let json: risk_engine::CompletedTransaction = serde_json::from_slice(m.value).unwrap();
-            // println!("JSON: {:?}",&json);
             // sends message to worker for consumption
             tx.send(msg.unwrap());
             }
