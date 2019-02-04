@@ -16,7 +16,7 @@ extern crate kafka;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use std::thread;
 use futures::{future, Future, Stream};
-use gotham::helpers::http::response::{create_response,create_empty_response};
+use gotham::helpers::http::response::create_response;
 use gotham::router::builder::*;
 use gotham::router::Router;
 use gotham::handler::{HandlerFuture, IntoResponse, IntoHandlerError};
@@ -115,8 +115,6 @@ fn post_handler(mut state: State) -> Box<HandlerFuture> {
                     },
                     Err(e) => panic!(e)
                 }}
-                // let res = create_empty_response(&state, StatusCode::OK);
-                // future::ok((state, res))
             }
             Err(e) => future::err((state, e.into_handler_error())),
         });
