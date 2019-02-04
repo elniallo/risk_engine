@@ -156,10 +156,11 @@ fn main() {
     let tx1 = tx.clone();
     let addr = "127.0.0.1:7878";
     println!("Listening for requests at http://{}", addr);
+    let _goth = gotham::start(addr, router(container.rest));
     // spawn thread to handle kafka client
     let handle = thread::spawn(move || {        
         let mut consumer =
-        Consumer::from_hosts(vec!("localhost:9092".to_owned()))
+        Consumer::from_hosts(vec!("127.0.0.1:9092".to_owned()))
             .with_topic("test".to_owned())
             .with_fallback_offset(FetchOffset::Earliest)
             .with_group("my-group".to_owned())
@@ -180,6 +181,5 @@ fn main() {
         consumer.commit_consumed().unwrap();
         }
     });
-    let goth = gotham::start(addr, router(container.rest));
     handle.join().unwrap();
 }
