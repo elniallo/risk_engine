@@ -1,17 +1,38 @@
-use std::collections::HashMap;
+use std::collections::{HashMap,VecDeque};
+use std::time::SystemTime;
 use std::error::Error;
 use super::account;
+#[derive(Clone)]
+pub struct ActiveAccount {
+    user_id: usize,
+    last_active: SystemTime,
+}
+#[derive(Clone,Deserialize)]
 pub struct WithdrawTransaction {
     user_id: usize,
     amount: f64,
     order_type:account::OrderType,
 }
 
+impl Default for WithdrawTransaction {
+    fn default() -> Self {
+        Self {
+            user_id: 0,
+            amount: 0.0,
+            order_type: account::OrderType::USD,
+        }
+    }
+}
+#[derive(Debug,Deserialize,Serialize)]
 pub struct CompletedTransaction {
     user_id: usize,
+    #[serde(rename="bought_quantity")]
     bought_amount: f64,
+    #[serde(rename="bought_token")]
     bought_type: account::OrderType,
+    #[serde(rename="sold_quantity")]
     sold_amount: f64,
+    #[serde(rename="sold_token")]
     sold_type: account::OrderType,
 }
 #[derive(Serialize)]
@@ -19,9 +40,12 @@ pub enum WithdrawalStatus {
     SUFFICIENT_BALANCE,
     INSUFFICIENT_BALANCE,
 }
+
+#[derive(Clone,StateData)]
 pub struct RiskEngine {
     pending_book: HashMap<usize,Vec<WithdrawTransaction>>,
     recent_accounts: HashMap<usize,account::Account>,
+    cache_list: VecDeque<ActiveAccount>,
     DB: HashMap<usize,account::Account>,
 }
 
@@ -30,6 +54,7 @@ impl RiskEngine {
         Self {
             pending_book: HashMap::new(),
             recent_accounts: HashMap::with_capacity(300),
+            cache_list: VecDeque::with_capacity(300),
             DB: HashMap::new(),
         }
     }
@@ -55,12 +80,33 @@ impl RiskEngine {
             if let Some(pendings) = self.pending_book.get_mut(&tx.user_id) {
                 pendings.push(tx);
             } else {
-                self.pending_book.insert(tx.user_id,vec![tx]);
+                let insert = self.pending_book.insert(tx.user_id,vec![tx]);
             }
             Ok(WithdrawalStatus::SUFFICIENT_BALANCE)
         } else {
             Ok(WithdrawalStatus::INSUFFICIENT_BALANCE)
         }
+    }
+
+    pub fn process_settlement(&mut self, tx:&mut CompletedTransaction) -> Result<(),String> {
+        if let Some(pendings) = self.pending_book.get_mut(&tx.user_id) {
+            let mut remove = 0;
+            for i in 0..pendings.len() {
+                if pendings[i].order_type == tx.sold_type && pendings[i].amount >= tx.sold_amount {
+                    remove = i;
+                    break;
+                }
+            }
+            let removed = pendings.remove(remove);
+            if pendings.len() == 0 {
+                self.pending_book.remove(&tx.user_id);
+            }
+            let account = self.get_account(tx.user_id)?;
+            account.update(tx.bought_amount,tx.bought_type,removed.amount-tx.sold_amount,tx.sold_type);
+        } else {
+            return Err("Not found".to_string());
+        }
+        Ok(())
     }
 }
 

@@ -1,15 +1,20 @@
 use std::cmp::{PartialOrd,Ordering};
-#[derive(PartialEq)]
+#[derive(PartialEq,Clone,StateData,Deserialize)]
 pub struct Account {
+    #[serde(rename="User_Id")]
     id: usize,
+     #[serde(rename="USD")]
     usd: f64,
+     #[serde(rename="EUR")]
     eur: f64,
+     #[serde(rename="BTC")]
     btc: f64,
+     #[serde(rename="BCH")]
     bch: f64,
+     #[serde(rename="ETH")]
     eth: f64,
-    last_active: usize,
 }
-#[derive(Copy,Clone, Deserialize)]
+#[derive(Copy,Clone, Debug,Deserialize,PartialEq,Serialize)]
 pub enum OrderType {
     USD,
     EUR,
@@ -18,16 +23,54 @@ pub enum OrderType {
     ETH,
 }
 
+
 impl Account {
     pub fn new(id:usize) -> Self{
-        Self {id,usd:0.0,eur:0.0,btc:0.0,bch:0.0,eth:0.0,last_active:0}
+        Self {id,usd:0.0,eur:0.0,btc:0.0,bch:0.0,eth:0.0}
     }
 
     pub fn get_id(&self)->usize {
         self.id
     }
 
-    fn usd_order(&mut self, amount: f64){
+    pub fn update(&mut self, buy_amt:f64,buy_type:OrderType,sell_adjustment:f64,sell_type:OrderType){
+        match buy_type {
+            OrderType::USD => {
+                self.usd += buy_amt      
+            },
+            OrderType::EUR => {
+                self.eur+= buy_amt
+            },
+            OrderType::BTC => {
+                self.btc+= buy_amt
+            },
+            OrderType::BCH => {
+                self.bch+=buy_amt
+            },            
+            OrderType::ETH => {
+                self.eth+=buy_amt
+            }
+        }
+        match sell_type {
+            OrderType::USD => {
+                self.usd += sell_adjustment      
+            },
+            OrderType::EUR => {
+                self.eur+= sell_adjustment
+            },
+            OrderType::BTC => {
+                self.btc+= sell_adjustment
+            },
+            OrderType::BCH => {
+                self.bch+=sell_adjustment
+            },            
+            OrderType::ETH => {
+                self.eth+=sell_adjustment
+            }
+        }
+    }
+
+    pub fn usd_order(&mut self, amount: f64){
         self.usd += amount;
     }
 
@@ -43,11 +86,11 @@ impl Account {
         self.bch += amount;
     }
 
-    fn eth_order(&mut self, amount:f64){
+    pub fn eth_order(&mut self, amount:f64){
         self.eth += amount;
     }
 
-    fn get_balances(&self) -> Vec<f64>{
+    pub fn get_balances(&self) -> Vec<f64>{
         vec![self.usd,self.eur,self.btc,self.bch,self.eth]
     }
 
